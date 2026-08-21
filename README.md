@@ -11,7 +11,9 @@ HD건설기계 AMPS기획팀(기획: 홍재영)의 업무 도구 모음 — 생�
 | 부품 사진 파일명 자동화 | `photo_renamer/` | 사진 속 품번·브랜드 판독 → `연번_품번_(브랜드)` 일괄 변경 (무료 OCR + Claude/ChatGPT/Solar 선택) |
 | 회의록 정리 도우미 | `meeting_notes/` | 메모 → 결정/논의/액션 자동 분류 → 표준 회의록 |
 
-각 폴더의 README에 사용법·데이터 양식·이어서 개발하는 방법이 정리되어 있습니다. 기획서 원문은 `CLAUDE.md`, 개발 과정은 `docs/개발일지.md` 참조.
+각 폴더의 README에 사용법·데이터 양식·이어서 개발하는 방법이 정리되어 있습니다. 기획서 원문은 [CLAUDE.md](CLAUDE.md), 개발 과정은 [docs/개발일지.md](docs/개발일지.md) 참조.
+
+도구별 바로가기: [뉴스레터 대시보드](https://aebonlee.github.io/hd-project08/dashboard_newsletter/) · [마케팅 대시보드](https://aebonlee.github.io/hd-project08/dashboard_marketing/) · [부품 사진 자동화](https://aebonlee.github.io/hd-project08/photo_renamer/) · [회의록 도우미](https://aebonlee.github.io/hd-project08/meeting_notes/)
 
 ## 실행
 
