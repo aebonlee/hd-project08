@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회의록 정리 도우미</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <h1>회의록 정리 도우미</h1>
+      <p class="subtitle">회의 메모를 붙여넣고 [정리하기]를 누르면 표준 회의록으로 구조화합니다 · 작성 내용은 자동 저장</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-outline" id="btn-sample">샘플 메모 불러오기</button>
+      <button class="btn btn-outline" id="btn-clear">새로 작성</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- 좌측: 입력 -->
+  <section class="pane pane-left">
+    <h2>1. 회의 메모 입력</h2>
+    <div class="meta-grid">
+      <label>회의 제목<input id="in-title" placeholder="예: 8월 마케팅 파트 주간회의"></label>
+      <label>일시<input id="in-datetime" placeholder="예: 2026-08-21 10:00"></label>
+      <label>참석자<input id="in-attendees" placeholder="예: 홍재영, 김민서, 이준호"></label>
+      <label>작성자<input id="in-author" placeholder="예: 홍재영"></label>
+      <label class="full">다음 회의<input id="in-next" placeholder="예: 2026-08-28 10:00 (미입력 시 '미정')"></label>
+    </div>
+    <label class="memo-label" for="in-memo">회의 메모 (자유 형식, 줄 단위로 분류됩니다)</label>
+    <textarea id="in-memo" placeholder="회의 중 받아 적은 메모를 그대로 붙여넣으세요.&#10;&#10;분류 힌트:&#10;· '결정/확정/하기로' 가 있으면 → 결정 사항&#10;· 'TODO/@이름/담당: 이름/~까지' 가 있으면 → 액션 아이템&#10;· 나머지 → 논의 내용"></textarea>
+    <div class="left-actions">
+      <button class="btn btn-primary btn-lg" id="btn-organize">정리하기 →</button>
+    </div>
+  </section>
+
+  <!-- 우측: 결과 -->
+  <section class="pane pane-right">
+    <div class="tabs">
+      <button class="tab active" data-tab="minutes">2. 회의록</button>
+      <button class="tab" data-tab="prompt">AI 프롬프트 템플릿</button>
+    </div>
+
+    <div class="tab-body" id="tab-minutes">
+      <div class="result-actions">
+        <button class="btn btn-outline btn-sm" id="btn-copy-md">클립보드 복사 (마크다운)</button>
+        <button class="btn btn-outline btn-sm" id="btn-download-md">.md 다운로드</button>
+        <button class="btn btn-outline btn-sm" id="btn-print">인쇄 (PDF)</button>
+      </div>
+      <div id="minutes-area" class="minutes">
+        <p class="placeholder">좌측에 메모를 입력하고 [정리하기]를 누르면 여기에 회의록이 표시됩니다.</p>
+      </div>
+    </div>
+
+    <div class="tab-body hidden" id="tab-prompt">
+      <p class="hint">사내 Copilot·LLM 채팅창에 그대로 붙여넣을 수 있는 회의록 정리 프롬프트입니다.
+        좌측의 회의 정보와 메모가 자동으로 삽입됩니다. (이 도구는 외부 AI를 호출하지 않습니다)</p>
+      <div class="result-actions">
+        <button class="btn btn-outline btn-sm" id="btn-copy-prompt">프롬프트 복사</button>
+      </div>
+      <textarea id="prompt-area" readonly></textarea>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">HD건설기계 AMPS기획팀 · 규칙 기반 분류이므로 결과를 확인 후 [이동] 버튼으로 조정하세요.</footer>
+
+<script src="js/logic.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

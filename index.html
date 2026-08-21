@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMPS기획팀 업무 도구 모음</title>
+<style>
+  :root { --ink:#101210; --ink2:#4c514c; --muted:#8a908a; --border:rgba(16,18,16,.11);
+          --accent:#0a7d3b; --navy:#1e3a8a; --orange:#FF5F00; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#f8f9f8; color:var(--ink);
+         font-family:"Pretendard","Malgun Gothic",system-ui,sans-serif; line-height:1.6; }
+  header { background:linear-gradient(150deg,#12203f,#1e3a8a 60%,#2a5db0); color:#fff; padding:52px 24px 44px; }
+  .wrap { max-width:960px; margin:0 auto; padding:0 24px; }
+  header .wrap { padding:0; max-width:960px; margin:0 auto; padding:0 24px; }
+  header h1 { font-size:clamp(24px,4vw,34px); margin:0 0 8px; }
+  header p { margin:0; opacity:.9; max-width:640px; }
+  main { max-width:1008px; margin:0 auto; padding:36px 24px 70px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .card { background:#fdfdfc; border:1px solid var(--border); border-radius:14px; padding:22px 24px;
+          display:flex; flex-direction:column; gap:8px; transition:box-shadow .15s, transform .15s; }
+  .card:hover { box-shadow:0 6px 20px rgba(16,18,16,.08); transform:translateY(-2px); }
+  .tag { align-self:flex-start; font-size:11px; font-weight:800; border-radius:99px; padding:2px 10px; }
+  .tag.up { background:#e8f0fb; color:#1c5cab; }
+  .tag.new { background:#e7f3ec; color:#075c2b; }
+  .tag.bonus { background:#fdf3e7; color:#9a5b00; }
+  h2 { font-size:17px; margin:2px 0 0; }
+  .card p { margin:0; color:var(--ink2); font-size:13.5px; flex:1; }
+  a.btn { align-self:flex-start; margin-top:8px; background:var(--accent); color:#fff; text-decoration:none;
+          font-weight:700; font-size:13px; border-radius:9px; padding:9px 18px; }
+  a.btn:hover { background:#075c2b; }
+  footer { color:var(--muted); font-size:12.5px; text-align:center; padding:0 24px 40px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>AMPS기획팀 업무 도구 모음</h1>
+    <p>HD건설기계 AMPS기획팀 — 대시보드 2종 업그레이드와 부품 사진 자동화, 회의록 정리 도우미
+       (기획: 홍재영 · 생성형 AI 업무자동화 전문가과정 1차수)</p>
+  </div>
+</header>
+<main>
+  <div class="grid">
+    <div class="card">
+      <span class="tag up">업그레이드</span>
+      <h2>뉴스레터 결과보고 대시보드</h2>
+      <p>현대·디벨론 브랜드 테마 전환, 엑셀 업로드 자동 반영, 지역별 오픈율 세계지도, AI 자동 결과 분석,
+         클릭 심층 분석과 월별 추이까지 — AMPS 글로벌 뉴스레터 성과 통합 보고.</p>
+      <a class="btn" href="dashboard_newsletter/index.html">열기 →</a>
+    </div>
+    <div class="card">
+      <span class="tag up">업그레이드</span>
+      <h2>마케팅 파트 업무공유 대시보드</h2>
+      <p>캠페인 현황 보드, 담당자별 업무, 주간 일정, 채널 성과 요약, 공지·이슈를 한 화면에서.
+         엑셀 임포트/내보내기로 데이터 관리.</p>
+      <a class="btn" href="dashboard_marketing/index.html">열기 →</a>
+    </div>
+    <div class="card">
+      <span class="tag new">신규</span>
+      <h2>부품 사진 파일명 자동화</h2>
+      <p>사진 속 품번·브랜드를 AI가 판독해 <b>연번_품번_(브랜드)</b>로 일괄 변경.
+         같은 부품은 자동으로 이어받고, 검수 화면에서 오인식을 바로잡은 뒤 적용합니다.
+         무료 OCR + Claude/ChatGPT/Solar API 선택.</p>
+      <a class="btn" href="photo_renamer/index.html">열기 →</a>
+    </div>
+    <div class="card">
+      <span class="tag bonus">보너스</span>
+      <h2>회의록 정리 도우미</h2>
+      <p>회의 메모를 붙여넣으면 결정사항·액션 아이템·논의사항으로 자동 분류해 표준 회의록으로.
+         사내 AI에 쓸 프롬프트 템플릿도 생성.</p>
+      <a class="btn" href="meeting_notes/index.html">열기 →</a>
+    </div>
+  </div>
+</main>
+<footer>각 도구의 사용법·데이터 양식·이어서 개발하는 방법은 폴더별 README와 docs/개발일지.md 참조</footer>
+</body>
+</html>
