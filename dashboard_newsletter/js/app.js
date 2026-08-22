@@ -50,6 +50,13 @@
   function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
+  /** #rrggbb → rgba(r,g,b,a) — 영역/스택 채움색용 */
+  function alpha(hex, a) {
+    const m = /^#([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
   function fmt(n) { return Number(n || 0).toLocaleString('ko-KR'); }
   function pct(v, digits) {
     const d = digits == null ? 1 : digits;
@@ -188,6 +195,7 @@
     renderAllSection(f);
     renderClicks(f);
     renderTrend(f);
+    renderVolume(f);
   }
 
   // KPI 카드 4개 (+ 전월 대비 증감)
@@ -345,7 +353,7 @@
     const show = f.brand === 'ALL';
     $('#allSection').style.display = show ? '' : 'none';
     if (!show) {
-      ['brandGroupChart', 'brandRegionChart'].forEach(function (id) {
+      ['brandGroupChart', 'brandRegionChart', 'brandShareChart'].forEach(function (id) {
         if (charts[id]) { charts[id].destroy(); delete charts[id]; }
       });
       return;
@@ -392,6 +400,35 @@
           tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + c.parsed.x + '%'; } } } },
         scales: { x: { beginAtZero: true, ticks: pctTicks(), grid: { color: cssVar('--grid') } },
           y: { grid: { display: false } } }
+      }
+    });
+
+    // 지역별 브랜드 발송 비중 (100% 스택)
+    const vm = NL.brandRegionVolume(rows);
+    const regionTotals = vm.regions.map(function (_, i) {
+      return vm.series.reduce(function (s, se) { return s + se.values[i]; }, 0);
+    });
+    makeChart('brandShareChart', {
+      type: 'bar',
+      data: {
+        labels: vm.regions,
+        datasets: vm.series.map(function (s) {
+          return { label: s.brand, raw: s.values,
+            data: s.values.map(function (v, i) {
+              return regionTotals[i] ? Math.round(v / regionTotals[i] * 1000) / 10 : 0;
+            }),
+            backgroundColor: s.brand === 'HYUNDAI' ? cH : cD,
+            stack: 'share', maxBarThickness: 13, barPercentage: 0.8, categoryPercentage: 0.66 };
+        })
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, boxHeight: 12 } },
+          tooltip: { callbacks: { label: function (c) {
+            return c.dataset.label + ': ' + c.parsed.x + '% (' + fmt(c.dataset.raw[c.dataIndex]) + '명)';
+          } } } },
+        scales: { x: { stacked: true, min: 0, max: 100, ticks: pctTicks(), grid: { color: cssVar('--grid') } },
+          y: { stacked: true, grid: { display: false } } }
       }
     });
   }
@@ -451,7 +488,7 @@
     $('#vipTable').innerHTML = html + '</tbody>';
   }
 
-  // 월별 오픈율 동향 (Hyundai vs Develon 라인 + 발송건수 콤보 옵션)
+  // 월별 오픈율 동향 (Hyundai vs Develon 라인 + 발송건수 막대 콤보 옵션 — 한 차트에 이중 축)
   function renderTrend(f) {
     // 브랜드 비교 목적이므로 브랜드 필터는 적용하지 않음 (월/대상/지역 필터만)
     const base = NL.filterSends(state.data.sends, { brand: 'ALL', months: null, audiences: f.audiences, regions: f.regions });
@@ -466,51 +503,84 @@
       });
     }
 
+    const datasets = [
+      { label: 'Hyundai', data: seriesFor('HYUNDAI', 'rate'), borderColor: cH, backgroundColor: cH,
+        borderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6, tension: 0.3,
+        pointBorderColor: cssVar('--surface'), pointBorderWidth: 1.5, yAxisID: 'y', order: 0 },
+      { label: 'Develon', data: seriesFor('DEVELON', 'rate'), borderColor: cD, backgroundColor: cD,
+        borderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6, tension: 0.3,
+        pointBorderColor: cssVar('--surface'), pointBorderWidth: 1.5, yAxisID: 'y', order: 0 }
+    ];
+    if (state.comboSend) {
+      datasets.push(
+        Object.assign({ type: 'bar', label: 'Hyundai 발송', data: seriesFor('HYUNDAI', 'sent'),
+          backgroundColor: alpha(cH, 0.35), yAxisID: 'y1', order: 1, barPercentage: 0.66, categoryPercentage: 0.6 }, BAR_OPTS),
+        Object.assign({ type: 'bar', label: 'Develon 발송', data: seriesFor('DEVELON', 'sent'),
+          backgroundColor: alpha(cD, 0.35), yAxisID: 'y1', order: 1, barPercentage: 0.66, categoryPercentage: 0.6 }, BAR_OPTS)
+      );
+    }
+    const scales = {
+      y: { ticks: pctTicks(), grid: { color: cssVar('--grid') },
+        title: { display: state.comboSend, text: '오픈율', font: { size: 10 } } },
+      x: { grid: { display: false } }
+    };
+    if (state.comboSend) {
+      scales.y1 = { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+        title: { display: true, text: '발송건수', font: { size: 10 } } };
+    }
+
     makeChart('trendChart', {
       type: 'line',
+      data: { labels: months.map(function (m) { return m + '월'; }), datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, boxHeight: 3 } },
+          tooltip: { callbacks: { label: function (c) {
+            return c.dataset.type === 'bar'
+              ? c.dataset.label + ': ' + fmt(c.parsed.y) + '건'
+              : c.dataset.label + ' 오픈율: ' + c.parsed.y + '%';
+          } } } },
+        scales: scales
+      }
+    });
+  }
+
+  // 월별 발송·오픈 구성 (스택 영역: 오픈 + 미오픈 = 발송) — 현재 브랜드/대상/지역 필터 적용
+  function renderVolume(f) {
+    const base = NL.filterSends(state.data.sends, { brand: f.brand, months: null, audiences: f.audiences, regions: f.regions });
+    const rows = NL.byMonth(base);
+    const main = cssVar('--c-main');
+    const rest = cssVar('--ramp-1');
+    $('#volumeTitle').textContent = '월별 발송·오픈 구성' + (f.brand === 'ALL' ? '' : ' (' + (f.brand === 'HYUNDAI' ? 'Hyundai' : 'Develon') + ')');
+    makeChart('volumeChart', {
+      type: 'line',
       data: {
-        labels: months.map(function (m) { return m + '월'; }),
+        labels: rows.map(function (r) { return r.month + '월'; }),
         datasets: [
-          { label: 'Hyundai', data: seriesFor('HYUNDAI', 'rate'), borderColor: cH, backgroundColor: cH,
-            borderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6, tension: 0.3,
-            pointBorderColor: cssVar('--surface'), pointBorderWidth: 1.5 },
-          { label: 'Develon', data: seriesFor('DEVELON', 'rate'), borderColor: cD, backgroundColor: cD,
-            borderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6, tension: 0.3,
-            pointBorderColor: cssVar('--surface'), pointBorderWidth: 1.5 }
+          { label: '오픈', data: rows.map(function (r) { return r.opens; }),
+            borderColor: main, backgroundColor: alpha(main, 0.55), fill: true,
+            borderWidth: 1.5, pointRadius: 2.5, tension: 0.3 },
+          { label: '미오픈', data: rows.map(function (r) { return r.recipients - r.opens; }),
+            borderColor: rest, backgroundColor: alpha(rest, 0.5), fill: true,
+            borderWidth: 1.5, pointRadius: 2.5, tension: 0.3 }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, boxHeight: 3 } },
-          tooltip: { callbacks: { label: function (c) { return c.dataset.label + ' 오픈율: ' + c.parsed.y + '%'; } } } },
-        scales: { y: { ticks: pctTicks(), grid: { color: cssVar('--grid') } }, x: { grid: { display: false } } }
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, boxHeight: 12 } },
+          tooltip: { callbacks: {
+            label: function (c) { return c.dataset.label + ': ' + fmt(c.parsed.y) + '명'; },
+            footer: function (items) {
+              const total = items.reduce(function (s, it) { return s + it.parsed.y; }, 0);
+              return '발송 합계: ' + fmt(total) + '명';
+            }
+          } } },
+        scales: { y: { stacked: true, beginAtZero: true, grid: { color: cssVar('--grid') } },
+          x: { grid: { display: false } } }
       }
     });
-
-    $('#trendSendBox').classList.toggle('show', state.comboSend);
-    if (state.comboSend) {
-      makeChart('trendSendChart', {
-        type: 'bar',
-        data: {
-          labels: months.map(function (m) { return m + '월'; }),
-          datasets: [
-            Object.assign({ label: 'Hyundai 발송', data: seriesFor('HYUNDAI', 'sent'), backgroundColor: cH, barPercentage: 0.66, categoryPercentage: 0.6 }, BAR_OPTS),
-            Object.assign({ label: 'Develon 발송', data: seriesFor('DEVELON', 'sent'), backgroundColor: cD, barPercentage: 0.66, categoryPercentage: 0.6 }, BAR_OPTS)
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false },
-            tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': ' + fmt(c.parsed.y) + '건'; } } } },
-          scales: { y: { beginAtZero: true, title: { display: true, text: '발송건수', font: { size: 10 } }, grid: { color: cssVar('--grid') } },
-            x: { grid: { display: false } } }
-        }
-      });
-    } else if (charts.trendSendChart) {
-      charts.trendSendChart.destroy();
-      delete charts.trendSendChart;
-    }
   }
 
   // ---------- 엑셀 업로드 ----------
@@ -584,10 +654,11 @@
   const CHART_TITLES = {
     brandGroupChart: '브랜드_그룹별_오픈율_비교',
     brandRegionChart: '지역별_브랜드_오픈율_비교',
+    brandShareChart: '지역별_브랜드_발송_비중',
     contentChart: '콘텐츠_선호도_순위',
     readerChart: '독자별_클릭_빈도_분포',
     trendChart: '월별_오픈율_동향',
-    trendSendChart: '월별_발송건수'
+    volumeChart: '월별_발송_오픈_구성'
   };
 
   function exportPngs() {

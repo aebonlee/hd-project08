@@ -18,13 +18,30 @@
     });
   }
 
-  /* ---------- 설정 (localStorage) ---------- */
+  /* ---------- 설정 (localStorage) ----------
+   * API 키 저장: 기본은 sessionStorage(브라우저 종료 시 삭제),
+   * [이 브라우저에 저장] 체크 시에만 localStorage에 평문 보관 (기존 저장 키와 호환) */
   var SETTINGS_KEY = "pr_settings_v1";
+  var SESSION_KEYS = "pr_keys_session_v1";
   function loadSettings() {
     try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; }
   }
   function saveSettings(s) {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) { /* 무시 */ }
+  }
+  function loadSessionKeys() {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEYS)) || {}; } catch (e) { return {}; }
+  }
+  function saveSessionKeys(k) {
+    try { sessionStorage.setItem(SESSION_KEYS, JSON.stringify(k)); } catch (e) { /* 무시 */ }
+  }
+  /** 엔진별 저장 키 조회 — localStorage(영구 저장)이면 persisted:true */
+  function storedKey(eng) {
+    var s = loadSettings();
+    if (s.keys && s.keys[eng]) return { key: s.keys[eng], persisted: true };
+    var sess = loadSessionKeys();
+    if (sess[eng]) return { key: sess[eng], persisted: false };
+    return null;
   }
   function currentEngine() { return $("engine").value; }
   function apiKey() { return $("api-key").value.trim(); }
@@ -32,7 +49,6 @@
   function initSettings() {
     var s = loadSettings();
     if (s.engine) $("engine").value = s.engine;
-    if (s.keys && s.keys[$("engine").value]) $("api-key").value = s.keys[$("engine").value];
     if (s.brands) $("brand-list").value = s.brands;
     else $("brand-list").value = L.DEFAULT_BRANDS.join("\n");
     if (s.model) $("ai-model").value = s.model;
@@ -43,10 +59,26 @@
     var s = loadSettings();
     s.engine = currentEngine();
     s.keys = s.keys || {};
-    if ($("save-key").checked && apiKey()) s.keys[currentEngine()] = apiKey();
+    var eng = currentEngine(), key = apiKey();
+    var sess = loadSessionKeys();
+    if (key) {
+      if ($("save-key").checked) { s.keys[eng] = key; delete sess[eng]; }
+      else { sess[eng] = key; delete s.keys[eng]; }
+      saveSessionKeys(sess);
+    }
     s.brands = $("brand-list").value;
     s.model = $("ai-model").value;
     saveSettings(s);
+  }
+  function deleteKey() {
+    var eng = currentEngine();
+    var s = loadSettings();
+    if (s.keys) { delete s.keys[eng]; saveSettings(s); }
+    var sess = loadSessionKeys();
+    delete sess[eng];
+    saveSessionKeys(sess);
+    $("api-key").value = "";
+    $("save-key").checked = false;
   }
   function brands() {
     return $("brand-list").value.split(/\n+/).map(function (b) { return b.trim(); }).filter(Boolean);
@@ -69,8 +101,9 @@
     $("ai-model").innerHTML = MODEL_OPTIONS[eng].map(function (o) {
       return "<option value=\"" + o[0] + "\">" + esc(o[1]) + "</option>";
     }).join("");
-    var s = loadSettings();
-    if (s.keys && s.keys[eng]) $("api-key").value = s.keys[eng]; else $("api-key").value = "";
+    var sk = storedKey(eng);
+    $("api-key").value = sk ? sk.key : "";
+    $("save-key").checked = !!(sk && sk.persisted);
     $("engine-hint").textContent = {
       tesseract: "무료·브라우저 내 처리(사진이 외부로 전송되지 않음). 인쇄 품질에 따라 오독 가능 — 검수 화면에서 수정하세요.",
       claude: "Anthropic API 키 필요. 사진을 Anthropic API로 전송해 판독합니다. 정확도가 가장 높습니다.",
@@ -330,6 +363,7 @@
 
   /* ---------- 초기화 ---------- */
   $("engine").addEventListener("change", onEngineChange);
+  $("del-key").addEventListener("click", deleteKey);
   $("brand-list").addEventListener("change", function () { persistSettings(); renderBrandDatalist(); });
   initSettings();
 })();
