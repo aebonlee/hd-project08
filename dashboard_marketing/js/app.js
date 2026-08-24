@@ -40,7 +40,17 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  function persist() { D.saveState(state); }
+  /**
+   * 저장.
+   *
+   * "업무공유" 대시보드인데 각자 브라우저에만 담으면 공유가 안 된다.
+   * 서버에 연결돼 있으면 팀 공용 문서로도 함께 보낸다.
+   * 화면 코드는 이 함수만 부르면 되고 저장 위치를 몰라도 된다.
+   */
+  function persist() {
+    D.saveState(state);
+    if (window.HDDoc && HDDoc.mode() === 'synced') HDDoc.save(state);
+  }
 
   function mmdd(dateStr) {
     var d = L.parseDate(dateStr);
@@ -565,6 +575,34 @@
     $('btn-this-week').addEventListener('click', function () { ui.weekOffset = 0; renderWeek(); });
   }
 
-  bindToolbar();
-  renderAll();
+  /**
+   * 시작 — 팀 공용 자료를 먼저 받아 온 뒤 화면을 그린다.
+   * 연결이 안 되면 이 브라우저에 있던 것으로 그대로 그린다(배너에 이유가 뜬다).
+   */
+  function boot() {
+    bindToolbar();
+
+    if (window.HDDoc && HDDoc.available()) {
+      HDDoc.boot({
+        id: 'amps-marketing',
+        initial: state,                 // 서버가 비어 있으면 이걸 씨앗으로 올린다
+        onReady: function (doc) {
+          if (doc && Array.isArray(doc.campaigns) && Array.isArray(doc.tasks)) {
+            // state 를 통째로 바꾸지 않고 속을 갈아 끼운다.
+            // 다른 함수들이 이 객체를 이미 붙들고 있기 때문이다.
+            Object.keys(state).forEach(function (k) { delete state[k]; });
+            Object.keys(doc).forEach(function (k) { state[k] = doc[k]; });
+          }
+          renderAll();
+        },
+        onFallback: function () { renderAll(); }
+      });
+      return;
+    }
+
+    if (window.HDDoc) HDDoc.banner('demo');
+    renderAll();
+  }
+
+  boot();
 })();
