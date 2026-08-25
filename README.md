@@ -2,6 +2,10 @@
 
 > 🌐 **배포 페이지: [https://aebonlee.github.io/hd-project08/](https://aebonlee.github.io/hd-project08/)** · 저장소: https://github.com/aebonlee/hd-project08
 
+> 🗄️ **Supabase 를 붙이려면 → [`SUPABASE-설정.md`](SUPABASE-설정.md)**
+> 데이터베이스는 **수강생 본인 계정**에 만듭니다. 계정 만들기부터 확인까지 단계별로 적어 두었습니다.
+
+
 HD건설기계 AMPS기획팀(기획: 홍재영)의 업무 도구 — 생성형 AI 업무자동화 전문가과정 1차수 프로젝트 (1차 개발본, 이후 개별 개발용).
 
 요청하신 3가지는 저장소를 나눠 관리합니다:
