@@ -146,7 +146,14 @@ create trigger action_sync before insert or update on public.action_item
 -- 3. 뷰
 -- ----------------------------------------------------------------------------
 
-create or replace view public.task_board as
+
+-- ⚠ 뷰에는 `with (security_invoker = true)` 를 붙인다.
+--   붙이지 않으면 뷰는 **만든 사람(postgres)의 권한**으로 돌아, 뷰를 읽을 수 있는
+--   사람이 밑에 깔린 표의 RLS 를 통째로 지나친다. 표만 잠그고 뷰를 안 잠그면 헛일이다.
+--   (hd-project03 에서 실제로 남의 업체 실사 결과가 뷰로 그대로 보였다.
+--    tests/server.test.js 의 "업체는 보고서 뷰로도 남의 자료를 볼 수 없다" 가 잡는다)
+--   security_invoker 는 PostgreSQL 15 부터. Supabase 는 15 이상이다.
+create or replace view public.task_board with (security_invoker = true) as
 select t.*,
        case
          when t.status = '완료' then '완료'
@@ -159,7 +166,7 @@ select t.*,
             then current_date - t.due_date else 0 end as overdue_days
 from public.task t;
 
-create or replace view public.part_summary as
+create or replace view public.part_summary with (security_invoker = true) as
 select coalesce(part, '(미지정)') as part,
        count(*)                                     as total,
        count(*) filter (where status = '완료')       as done,
@@ -169,7 +176,7 @@ from public.task_board
 group by coalesce(part, '(미지정)');
 
 -- 회의는 했는데 할 일이 안 끝난 것 — 회의록이 실행으로 이어지는지 본다
-create or replace view public.open_actions as
+create or replace view public.open_actions with (security_invoker = true) as
 select a.id, m.title as meeting_title, m.held_at, a.content, a.owner_name, a.due_date,
        case when a.due_date is not null and a.due_date < current_date
             then current_date - a.due_date else 0 end as overdue_days
